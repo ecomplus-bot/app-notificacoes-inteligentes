@@ -190,6 +190,10 @@ procedures.push({
       resource: 'orders',
       field: 'fulfillment_status',
     },
+    {
+      resource: 'orders',
+      field: 'status',
+    },
     
     // Receive notifications when cart is created with customer:
     {

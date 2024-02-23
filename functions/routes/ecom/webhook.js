@@ -60,6 +60,17 @@ exports.post = ({ appSdk }, req, res) => {
                     return res.sendStatus(204)
                   }
                 }
+                if (resource === 'orders' && response.data.status === 'cancelled' && !(response.data.transactions && response.data.transactions.length)) {
+                  response.data.financial_status = {
+                    current = 'voided'
+                  }
+                } else if (
+                  resource === 'orders' &&
+                  !trigger.fields.includes('financial_status') &&
+                  !trigger.fields.includes('fulfillment_status')
+                ) {
+                  return res.sendStatus(204)
+                }
                 console.log(`> Sending ${resource} notification`)
                 return axios({
                   method: 'post',
