@@ -54,7 +54,7 @@ exports.post = ({ appSdk }, req, res) => {
                     }
                     if (!(Date.now() - new Date(cart.created_at).getTime() >= abandonedCartDelay)) {
                       const documentRef = firestore().doc(`cart_to_add/${cart._id}`)
-                      const msDate = new Date().getTime() + abandonedCartDelay
+                      const msDate = new Date(cart.created_at).getTime() + abandonedCartDelay
                       await documentRef.set({
                         data: {
                           storeId,
