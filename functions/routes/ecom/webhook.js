@@ -47,14 +47,29 @@ exports.post = ({ appSdk }, req, res) => {
                   const cart = response.data
                   if (cart.available && !cart.completed) {
                     const abandonedCartDelay = (appData.cart_delay || 12) * 1000 * 60
-                    if (Date.now() - new Date(cart.created_at).getTime() >= abandonedCartDelay) {
-                      const { customers } = cart
-                      if (customers && customers[0]) {
-                        const { response } = await appSdk.apiRequest(storeId, `customers/${customers[0]}.json`)
-                        customer = response.data
-                      }
-                    } else {
-                      return res.sendStatus(501)
+                    const { customers } = cart
+                    if (customers && customers[0]) {
+                      const { response } = await appSdk.apiRequest(storeId, `customers/${customers[0]}.json`)
+                      customer = response.data
+                    }
+                    if (!(Date.now() - new Date(cart.created_at).getTime() >= abandonedCartDelay)) {
+                      const documentRef = firestore().doc(`cart_to_add/${cart._id}`)
+                      const msDate = new Date().getTime() + abandonedCartDelay
+                      await documentRef.set({
+                        data: {
+                          storeId,
+                          trigger,
+                          [resource.slice(0, -1)]: cart,
+                          customer
+                        },
+                        url,
+                        storeId,
+                        sendAt: firestore.Timestamp.fromDate(new Date(msDate))
+                      })
+                      return res.send({
+                        status: 400,
+                        text: 'Waiting to send'
+                      })
                     }
                   } else {
                     return res.sendStatus(204)
