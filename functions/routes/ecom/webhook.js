@@ -38,7 +38,7 @@ exports.post = ({ appSdk }, req, res) => {
         const resourceId = trigger.resource_id || trigger.inserted_id
         if (resourceId) {
           const url = appData.ni_webhook_uri
-          console.log(`Trigger for Store #${storeId} ${resourceId} => ${url}`)
+          console.log(`Trigger for Store #${storeId} ${resource} ${resourceId} => ${url}`)
           if (url) {
             return appSdk.apiRequest(storeId, `${resource}/${resourceId}.json`)
               .then(async ({ response }) => {
@@ -53,6 +53,7 @@ exports.post = ({ appSdk }, req, res) => {
                       customer = response.data
                     }
                     if (!(Date.now() - new Date(cart.created_at).getTime() >= abandonedCartDelay)) {
+
                       const documentRef = firestore().doc(`cart_to_add/${cart._id}`)
                       const msDate = new Date(cart.created_at).getTime() + abandonedCartDelay
                       await documentRef.set({
