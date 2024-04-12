@@ -55,5 +55,5 @@
     }
   },
   "auth_callback_uri": "https://us-central1-ecom-notificacoes-inteligentes.cloudfunctions.net/app/ecom/auth-callback",
-  "version": "1.0.0"
+  "version": "1.6.0"
 }
