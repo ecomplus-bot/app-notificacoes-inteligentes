@@ -1,4 +1,5 @@
 const axios = require('axios')
+const { firestore } = require('firebase-admin')
 
 // read configured E-Com Plus app data
 const getAppData = require('./../../lib/store-api/get-app-data')
