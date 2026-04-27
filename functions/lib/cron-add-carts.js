@@ -34,7 +34,7 @@ module.exports = async ({ appSdk }) => {
     if (cart && !cart.completed) {
       console.log('cart before send', cart.items && cart.items.length, 'index:', i)
       data.cart = cart
-      return axios({
+      await axios({
         method: 'post',
         url,
         data
@@ -43,6 +43,7 @@ module.exports = async ({ appSdk }) => {
         await docs[i].ref.delete()
         console.log('foi excluido', storeId)
       })
+      continue
     }
     console.log('index after delete', i, storeId)
     await docs[i].ref.delete()

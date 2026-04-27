@@ -146,6 +146,6 @@ exports.addPoints = functions.runWith({ timeoutSeconds: 360 })
   .pubsub.schedule('*/10 * * * *').onRun(() => {
     console.log('running schedule cron add carts')
     return prepareAppSdk().then(appSdk => {
-      addCarts({ appSdk })
+      return addCarts({ appSdk })
     })
 })
