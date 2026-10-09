@@ -61,8 +61,8 @@ module.exports = async ({ appSdk }) => {
     try {
       await processCart({ appSdk }, docs[i], i)
     } catch (error) {
-      const { storeId } = docs[i].data()
-      const attempts = (docs[i].data().attempts || 0) + 1
+      const { storeId, attempts: prevAttempts = 0 } = docs[i].data()
+      const attempts = prevAttempts + 1
       logger.error(`failed adding cart ${docs[i].ref.id} for #${storeId} (attempt ${attempts})`, {
         message: error.message,
         status: error.response && error.response.status,
