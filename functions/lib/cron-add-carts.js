@@ -5,6 +5,10 @@ const { firestore } = require('firebase-admin')
 const MAX_ATTEMPTS = 3
 // carts stuck in queue for too long must not be notified anymore
 const MAX_DELAY_MS = 24 * 60 * 60 * 1000
+// order created shortly before the cart means the customer already bought with another cart
+const ORDER_BEFORE_CART_MS = 60 * 60 * 1000
+// avoid notifying the same customer for multiple carts
+const NOTIFIED_INTERVAL_MS = 24 * 60 * 60 * 1000
 
 const processCart = async ({ appSdk }, doc, i) => {
   const { storeId, data, url, sendAt } = doc.data()
@@ -33,6 +37,33 @@ const processCart = async ({ appSdk }, doc, i) => {
   }
 
   if (cart && !cart.completed) {
+    const customerId = cart.customers && cart.customers[0]
+    if (customerId) {
+      // customer may have bought with another cart (just before or after this one)
+      const since = new Date(new Date(cart.created_at).getTime() - ORDER_BEFORE_CART_MS)
+      const { result: orders } = (await appSdk.apiRequest(
+        storeId,
+        `/orders.json?buyers._id=${customerId}&created_at>=${since.toISOString()}&fields=_id&limit=1`
+      )).response.data
+      if (orders && orders.length) {
+        console.log(`skipping cart ${cartId} for #${storeId}: customer has order ${orders[0]._id}`)
+        await doc.ref.delete()
+        return
+      }
+
+      // only one abandoned cart notification per customer in a while
+      const notifiedRef = firestore().doc(`cart_notified/${storeId}_${customerId}`)
+      const notified = await notifiedRef.get()
+      if (
+        notified.exists &&
+        Date.now() - notified.get('sentAt').toDate().getTime() < NOTIFIED_INTERVAL_MS
+      ) {
+        console.log(`skipping cart ${cartId} for #${storeId}: customer already notified with cart ${notified.get('cartId')}`)
+        await doc.ref.delete()
+        return
+      }
+    }
+
     console.log('cart before send', cart.items && cart.items.length, 'index:', i)
     data.cart = cart
     const { status, data: resData } = await axios({
@@ -42,6 +73,13 @@ const processCart = async ({ appSdk }, doc, i) => {
       timeout: 20000
     })
     console.log(`> ${status}`, JSON.stringify(resData))
+    if (customerId) {
+      await firestore().doc(`cart_notified/${storeId}_${customerId}`).set({
+        storeId,
+        cartId,
+        sentAt: firestore.Timestamp.now()
+      }).catch(logger.error)
+    }
   }
   console.log('index after delete', i, storeId)
   await doc.ref.delete()
