@@ -39,11 +39,12 @@ const processCart = async ({ appSdk }, doc, i) => {
   if (cart && !cart.completed) {
     const customerId = cart.customers && cart.customers[0]
     if (customerId) {
-      // customer may have bought with another cart (just before or after this one)
+      // customer may have bought with another cart (just before or after this one),
+      // cancelled orders (e.g. payment refused) must not prevent the notification
       const since = new Date(new Date(cart.created_at).getTime() - ORDER_BEFORE_CART_MS)
       const { result: orders } = (await appSdk.apiRequest(
         storeId,
-        `/orders.json?buyers._id=${customerId}&created_at>=${since.toISOString()}&fields=_id&limit=1`
+        `/orders.json?buyers._id=${customerId}&created_at>=${since.toISOString()}&status!=cancelled&fields=_id&limit=1`
       )).response.data
       if (orders && orders.length) {
         console.log(`skipping cart ${cartId} for #${storeId}: customer has order ${orders[0]._id}`)
